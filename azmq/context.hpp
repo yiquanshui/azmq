@@ -13,7 +13,7 @@
 #include "option.hpp"
 #include "error.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <zmq.h>
 
 namespace azmq {
@@ -28,7 +28,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *  \remark Must be called before any sockets are created
      */
     template<typename Option>
-    boost::system::error_code set_option(boost::asio::io_service & io_service,
+    boost::system::error_code set_option(boost::asio::io_context & io_service,
                                          const Option & option,
                                          boost::system::error_code & ec) {
         return boost::asio::use_service<detail::socket_service>(io_service).set_option(option, ec);
@@ -40,7 +40,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *  \remark Must be called before any sockets are created
      */
     template<typename Option>
-    void set_option(boost::asio::io_service & io_service, const Option & option) {
+    void set_option(boost::asio::io_context & io_service, const Option & option) {
         boost::system::error_code ec;
         if (set_option(io_service, option, ec))
             throw boost::system::system_error(ec);
@@ -52,7 +52,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *  \param ec boost::system::error_code
      */
     template<typename Option>
-    boost::system::error_code get_option(boost::asio::io_service & io_service,
+    boost::system::error_code get_option(boost::asio::io_context & io_service,
                                          Option & option,
                                          boost::system::error_code & ec) {
         return boost::asio::use_service<detail::socket_service>(io_service).get_option(option, ec);
@@ -64,7 +64,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *  \param ec boost::system::error_code
      */
     template<typename Option>
-    void get_option(boost::asio::io_service & io_service, Option & option) {
+    void get_option(boost::asio::io_context & io_service, Option & option) {
         boost::system::error_code ec;
         if (get_option(io_service, option))
             throw boost::system::system_error(ec);

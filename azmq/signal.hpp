@@ -25,7 +25,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 boost::system::error_code send(socket & s, uint8_t status,
                                boost::system::error_code & ec) {
     uint64_t v = 0x77664433221100u + status;
-    auto buf = boost::asio::buffer(&v, sizeof(v));
+    auto buf = std::array<boost::asio::mutable_buffer, 1> {boost::asio::buffer(&v, sizeof(v))};
     s.send(buf, 0, ec);
     return ec;
 }

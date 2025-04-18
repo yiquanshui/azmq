@@ -90,7 +90,7 @@ namespace detail {
             std::array<op_queue_type, max_ops> op_queues_;
 
 #ifdef AZMQ_DETAIL_USE_IO_SERVICE
-            void do_open(boost::asio::io_service & ios,
+            void do_open(boost::asio::io_context & ios,
 #else
             void do_open(boost::asio::io_context & ios,
 #endif			 
@@ -194,15 +194,15 @@ namespace detail {
         using core_access = azmq::detail::core_access<socket_service>;
 
 #ifdef AZMQ_DETAIL_USE_IO_SERVICE	  
-        explicit socket_service(boost::asio::io_service & ios)
+        explicit socket_service(boost::asio::io_context & ios)
 #else
-        explicit socket_service(boost::asio::io_service & ios)
+        explicit socket_service(boost::asio::io_context & ios)
 #endif
             : azmq::detail::service_base<socket_service>(ios)
             , ctx_(context_ops::get_context())
         { }
 
-        void shutdown_service() override {
+        void shutdown_service() {
             ctx_.reset();
         }
 
@@ -688,12 +688,14 @@ namespace detail {
                     if (op->do_perform(impl->socket_)) {
                         impl->in_speculative_completion_ = true;
                         l.unlock();
-#ifdef AZMQ_DETAIL_USE_IO_SERVICE			
-                        get_io_service()
-#else
-                        get_io_context()
-#endif
-                            .post(deferred_completion(impl, std::move(op)));
+                        // boost::asio::post(
+// #ifdef AZMQ_DETAIL_USE_IO_SERVICE
+//                         get_io_service()
+// #else
+//                         get_io_context()
+// #endif
+                                // .get_executor().post(deferred_completion(impl, std::move(op)));
+                        boost::asio::post(deferred_completion(impl, std::move(op)));
                         return;
                     }
                 }

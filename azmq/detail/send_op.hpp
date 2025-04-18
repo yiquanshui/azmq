@@ -14,7 +14,7 @@
 #include "reactor_op.hpp"
 
 #include <boost/version.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #if BOOST_VERSION >= 107900

@@ -18,7 +18,7 @@
 #include "detail/receive_op.hpp"
 
 #include <boost/asio/basic_io_object.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -94,7 +94,7 @@ public:
     using conflate = opt::boolean<ZMQ_CONFLATE>;
 
     /** \brief socket constructor
-     *  \param ios reference to an asio::io_service
+     *  \param ios reference to an asio::io_context
      *  \param s_type int socket type
      *      For socket types see the zeromq documentation
      *  \param optimize_single_threaded bool
@@ -108,7 +108,7 @@ public:
      *      io_service.run() you may bypass the mutex by passing true for
      *      optimize_single_threaded.
      */
-    explicit socket(boost::asio::io_service& ios,
+    explicit socket(boost::asio::io_context& ios,
                     int type,
                     bool optimize_single_threaded = false)
             : azmq::detail::basic_io_object<detail::socket_service>(ios) {
@@ -513,8 +513,8 @@ public:
     void async_receive(MutableBufferSequence const& buffers,
                        ReadHandler && handler,
                        flags_type flags = 0) {
-        using type = detail::receive_buffer_op<MutableBufferSequence, ReadHandler>;
-        get_service().enqueue<type>(get_implementation(), detail::socket_service::op_type::read_op,
+        using op_type = detail::receive_buffer_op<MutableBufferSequence, ReadHandler>;
+        get_service().enqueue<op_type>(get_implementation(), detail::socket_service::op_type::read_op,
                                     buffers, std::forward<ReadHandler>(handler), flags);
     }
 
@@ -656,7 +656,7 @@ public:
         *  \param ec error_code to set on error
         *  \returns socket
     **/
-    socket monitor(boost::asio::io_service & ios,
+    socket monitor(boost::asio::io_context & ios,
                    int events,
                    boost::system::error_code & ec) {
         auto uri = get_service().monitor(get_implementation(), events, ec);
@@ -674,7 +674,7 @@ public:
         *  \param events int mask of events to publish to returned socket
         *  \returns socket
     **/
-    socket monitor(boost::asio::io_service & ios,
+    socket monitor(boost::asio::io_context & ios,
                    int events) {
         boost::system::error_code ec;
         auto res = monitor(ios, events, ec);
@@ -777,7 +777,7 @@ namespace detail {
         typedef socket Base;
 
     public:
-        specialized_socket(boost::asio::io_service & ios,
+        specialized_socket(boost::asio::io_context & ios,
                            bool optimize_single_threaded = false)
             : Base(ios, Type, optimize_single_threaded)
         {

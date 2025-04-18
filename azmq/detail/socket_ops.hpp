@@ -15,7 +15,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/socket_base.hpp>
 #if ! defined BOOST_ASIO_WINDOWS
     #include <boost/asio/posix/stream_descriptor.hpp>
@@ -88,7 +88,7 @@ namespace detail {
             return socket_type(res);
         }
 
-        static stream_descriptor get_stream_descriptor(boost::asio::io_service & io_service,
+        static stream_descriptor get_stream_descriptor(boost::asio::io_context & io_service,
                                                        socket_type & socket,
                                                        boost::system::error_code & ec) {
             BOOST_ASSERT_MSG(socket, "invalid socket");
@@ -141,7 +141,7 @@ namespace detail {
                 uint16_t port = first;
                 if (opcode[0] == '!') {
                     static boost::random::taus88 gen;
-                    boost::random::uniform_int_distribution<> port_range(port, last);
+                    boost::random::uniform_int_distribution<uint16_t> port_range(port, last);
                     port = port_range(gen);
                 }
                 auto attempts = last - first;
@@ -291,6 +291,25 @@ namespace detail {
             auto rc = zmq_msg_recv(&msg.msg_, socket.get(), flags);
             if (rc < 0) {
                 ec = make_error_code();
+                return 0;
+            }
+            return rc;
+        }
+
+        static size_t receive(const boost::asio::mutable_buffer & buffer,
+                              socket_type & socket,
+                              flags_type flags,
+                              boost::system::error_code & ec) {
+            BOOST_ASSERT_MSG(socket, "Invalid socket");
+            message msg;
+            auto rc = zmq_msg_recv(&msg.msg_, socket.get(), flags);
+            if (rc < 0) {
+                ec = make_error_code();
+                return 0;
+            }
+
+            if (msg.buffer_copy(buffer) < rc) {
+                ec = make_error_code(boost::system::errc::no_buffer_space);
                 return 0;
             }
             return rc;

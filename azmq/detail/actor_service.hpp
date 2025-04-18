@@ -43,14 +43,14 @@ namespace detail {
         inline static std::string get_uri(const char* pfx);
 
 #ifdef AZMQ_DETAIL_USE_IO_SERVICE
-        actor_service(boost::asio::io_service & ios)
+        actor_service(boost::asio::io_context & ios)
 #else
         actor_service(boost::asio::io_context & ios)
 #endif
             : azmq::detail::service_base<actor_service>(ios)
         { }
 
-        void shutdown_service() override { }
+        void shutdown_service() { }
 
         using is_alive = opt::boolean<static_cast<int>(opt::limits::lib_actor_min)>;
         using detached = opt::boolean<static_cast<int>(opt::limits::lib_actor_min) + 1>;
@@ -68,7 +68,7 @@ namespace detail {
 
         template<typename T>
 #ifdef AZMQ_DETAIL_USE_IO_SERVICE
-        static socket make_pipe(boost::asio::io_service & ios, bool defer_start, T&& data) {
+        static socket make_pipe(boost::asio::io_context & ios, bool defer_start, T&& data) {
 #else
         static socket make_pipe(boost::asio::io_context & ios, bool defer_start, T&& data) {
 #endif
@@ -82,7 +82,7 @@ namespace detail {
         struct concept_ {
             using ptr = std::shared_ptr<concept_>;
 
-            boost::asio::io_service io_service_;
+            boost::asio::io_context io_service_;
             boost::asio::signal_set signals_;
             pair_socket socket_;
             thread_t thread_;
@@ -106,7 +106,7 @@ namespace detail {
             virtual ~concept_() = default;
 
 #ifdef AZMQ_DETAIL_USE_IO_SERVICE
-            pair_socket peer_socket(boost::asio::io_service & peer) {
+            pair_socket peer_socket(boost::asio::io_context & peer) {
 #else
             pair_socket peer_socket(boost::asio::io_context & peer) {
 #endif
@@ -200,7 +200,7 @@ namespace detail {
                 , defer_start_(defer_start)
             { }
 
-            void on_install(boost::asio::io_service&, void*) {
+            void on_install(boost::asio::io_context&, void*) {
                 if (defer_start_) return;
                 defer_start_ = false;
                 concept_::run(p_);
@@ -277,9 +277,9 @@ namespace detail {
     };
 
     std::string actor_service::get_uri(const char* pfx) {
-        static std::atomic_ulong id{ 0 };
+        static std::atomic_ulong static_id{ 0 };
         std::ostringstream stm;
-        stm << "inproc://azmq-" << pfx << "-" << id++;
+        stm << "inproc://azmq-" << pfx << "-" << static_id++;
         return stm.str();
     }
 
