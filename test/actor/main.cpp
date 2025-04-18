@@ -42,7 +42,7 @@ TEST_CASE( "Async Send/Receive", "[actor]" ) {
             boost::asio::buffer(b)
         }};
 
-        boost::asio::io_service ios;
+        boost::asio::io_context ios;
         auto s = azmq::actor::spawn(ios, [&](azmq::socket & ss) {
             ss.async_receive(rcv_bufs, [&](boost::system::error_code const& ec, size_t bytes_transferred) {
                 ecb = ec;
@@ -57,7 +57,7 @@ TEST_CASE( "Async Send/Receive", "[actor]" ) {
             btc = bytes_transferred;
         });
 
-        boost::asio::io_service::work w(ios);
+        // boost::asio::io_context::work w(ios);
         ios.run();
     }
 

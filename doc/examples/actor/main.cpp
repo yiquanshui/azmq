@@ -1,7 +1,7 @@
 #include <azmq/actor.hpp>
 
 #include <boost/utility/string_ref.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -17,14 +17,15 @@ namespace pt = boost::posix_time;
 
 class server_t {
 public:
-    server_t(asio::io_service & ios)
+    server_t(asio::io_context & ios)
         : pimpl_(std::make_shared<impl>())
         , frontend_(azmq::actor::spawn(ios, run, pimpl_))
     { }
 
     void ping() {
         frontend_.send(asio::buffer("PING"));
-        frontend_.async_receive(asio::buffer(buf_), [this](boost::system::error_code const& ec, size_t bytes_transferred) {
+        const std::vector<boost::asio::mutable_buffer> buffers {asio::buffer(buf_)};
+        frontend_.async_receive(buffers, [this](boost::system::error_code const& ec, size_t bytes_transferred) {
             if (ec)
                 return;
             if (boost::string_ref(buf_.data(), bytes_transferred - 1) == "PONG")
@@ -56,7 +57,8 @@ private:
     // we schedule async receives for the backend socket here
     static void do_receive(azmq::socket & backend, std::weak_ptr<impl> pimpl) {
         if (auto p = pimpl.lock()) {
-            backend.async_receive(asio::buffer(p->buf_), [&backend, pimpl](boost::system::error_code const& ec, size_t bytes_transferred) {
+            const std::vector<boost::asio::mutable_buffer> buffers {asio::buffer(p->buf_)};
+            backend.async_receive(buffers, [&backend, pimpl](boost::system::error_code const& ec, size_t bytes_transferred) {
                 if (ec)
                     return; // exit on error
 
@@ -96,8 +98,8 @@ void schedule_ping(asio::deadline_timer & timer, server_t & server) {
     });
 };
 
-int main(int argc, char** argv) {
-    asio::io_service ios;
+int main(int /*argc*/, char** /*argv*/) {
+    asio::io_context ios;
 
     std::cout << "Running...";
     std::cout.flush();
